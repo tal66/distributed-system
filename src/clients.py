@@ -28,12 +28,13 @@ class ClientLibrary:
             log.debug(f"ClientLib send to {sid}: pay token_{token_id} to {new_owner_id}")
             s = ClientLibrary.servers[sid]
 
-            data = {"func": "pay",
-                    "args": (msg_id, client_id, token_id, version, new_owner_id),
-                    "send_to": s,
-                    "send_to_id": sid,
-                    "sent_from": "ClientLib"
-                    }
+            data = {
+                "func": "pay",
+                "args": (msg_id, client_id, token_id, version, new_owner_id),
+                "send_to": s,
+                "send_to_id": sid,
+                "sent_from": "ClientLib",
+            }
             data = pickle.dumps(data)
             ClientLibrary.client_socket.sendto(data, common.SYSTEM_ADDR)
 
@@ -48,12 +49,13 @@ class ClientLibrary:
             log.debug(f"ClientLib send to {sid}: {client_id} get_tokens({owner_id})")
             s = ClientLibrary.servers[sid]
 
-            data = {"func": "get_tokens",
-                    "args": (msg_id, client_id, owner_id),
-                    "send_to": s,
-                    "send_to_id": sid,
-                    "sent_from": "ClientLib"
-                    }
+            data = {
+                "func": "get_tokens",
+                "args": (msg_id, client_id, owner_id),
+                "send_to": s,
+                "send_to_id": sid,
+                "sent_from": "ClientLib",
+            }
             data = pickle.dumps(data)
             ClientLibrary.client_socket.sendto(data, common.SYSTEM_ADDR)
 
@@ -76,10 +78,7 @@ class ClientLibrary:
 
     @staticmethod
     def write_to_main_events_log(msg):
-        data = {"msg": msg,
-                "file": "clients",
-                "sent_from": "ClientLib"
-                }
+        data = {"msg": msg, "file": "clients", "sent_from": "ClientLib"}
         data = pickle.dumps(data)
         ClientLibrary.client_socket.sendto(data, common.MAIN_EVENTS_ADDR)
 
@@ -105,11 +104,11 @@ class ClientLibrary:
             data, addr = server_socket.recvfrom(1024 * 4)
 
             data = pickle.loads(data)
-            args = data['args']
+            args = data["args"]
             log.debug(f"ClientLib received {data} from {addr} | args: {args}")
 
             try:
-                func = getattr(ClientLibrary, data['func'])
+                func = getattr(ClientLibrary, data["func"])
                 log.debug(f"calling ClientLib.{data['func']} with {args}")
                 if type(args) is dict:
                     func(**args)

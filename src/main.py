@@ -31,7 +31,7 @@ def init_servers(server_instances: dict):
         s = server_instances[sid]
         log.info(f"server {s.id} running on port {port}")
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        server_address = ('localhost', port)
+        server_address = ("localhost", port)
         server_socket.bind(server_address)
         pool.submit(s.udp_receive, server_socket)
 
@@ -39,14 +39,14 @@ def init_servers(server_instances: dict):
 
     port = common.SERVER_START_PORT
     for sid in server_instances.keys():
-        Server.servers_addr[sid] = ('localhost', port)
+        Server.servers_addr[sid] = ("localhost", port)
         port += 1
 
     # init server token structures
     for sid in server_instances.keys():
         s: Server = server_instances[sid]
-        s.tokenID_to_token = {i: Token(id=i, version=1, owner=f'c{((i - 1) // 10) + 1}') for i in range(1, 61)}
-        s.client_to_tokenID_history = {f'c{i}': [k for k in range((i - 1) * 10 + 1, 10 * i + 1)] for i in range(1, 7)}
+        s.tokenID_to_token = {i: Token(id=i, version=1, owner=f"c{((i - 1) // 10) + 1}") for i in range(1, 61)}
+        s.client_to_tokenID_history = {f"c{i}": [k for k in range((i - 1) * 10 + 1, 10 * i + 1)] for i in range(1, 7)}
 
     pool.shutdown(wait=True)
 
@@ -55,7 +55,10 @@ def init_system(server_instances: dict):
     """start sys server"""
     for i, sid in enumerate(server_instances.keys()):
         common.System.servers_info[sid] = {}
-        common.System.servers_info[sid]["addr"] = ('localhost', common.SERVER_START_PORT + i)
+        common.System.servers_info[sid]["addr"] = (
+            "localhost",
+            common.SERVER_START_PORT + i,
+        )
         common.System.servers_info[sid]["is_faulty"] = False
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -81,7 +84,7 @@ def init_system(server_instances: dict):
 def init_main_events_logger(filename="main_events.log"):
     log.info(f"main events logger running on port {common.MAIN_EVENTS_PORT}")
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server_address = ('localhost', common.MAIN_EVENTS_PORT)
+    server_address = ("localhost", common.MAIN_EVENTS_PORT)
     server_socket.bind(server_address)
 
     f = open(filename, "w")
@@ -89,8 +92,8 @@ def init_main_events_logger(filename="main_events.log"):
     while True:
         data, addr = server_socket.recvfrom(1024 * 4)
         data = pickle.loads(data)
-        msg = data['msg']
-        file = data['file']
+        msg = data["msg"]
+        file = data["file"]
         # sent_from = data['sent_from']
 
         try:
@@ -115,7 +118,7 @@ def init_clients(client_instances: dict, server_instances: dict):
     ClientLibrary.servers = {}
     port = common.SERVER_START_PORT
     for sid in server_ids:
-        ClientLibrary.servers[sid] = ('localhost', port)
+        ClientLibrary.servers[sid] = ("localhost", port)
         port += 1
 
     # client lib
@@ -123,7 +126,7 @@ def init_clients(client_instances: dict, server_instances: dict):
     ClientLibrary.msgs = set()
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    client_lib_server_address = ('localhost', common.CLIENT_START_PORT)
+    client_lib_server_address = ("localhost", common.CLIENT_START_PORT)
     server_socket.bind(client_lib_server_address)
     common.System.pool.submit(ClientLibrary.udp_receive, server_socket)
 
@@ -142,26 +145,47 @@ def init_clients(client_instances: dict, server_instances: dict):
 def periodic_queue(client_socket: socket.socket, period_sec=5):
     while True:
         sleep(period_sec)
-        for port in range(common.SERVER_START_PORT, common.SERVER_START_PORT + common.MAX_NUM_SERVERS + 1):
-            data = {"func": "check_queue",
-                    "args": [],
-                    "send_to": ('localhost', port), "send_to_id": "", "sent_from": "periodic_queue",
-                    "delay": 0, "disable_fault": True,
-                    }
+        for port in range(
+            common.SERVER_START_PORT,
+            common.SERVER_START_PORT + common.MAX_NUM_SERVERS + 1,
+        ):
+            data = {
+                "func": "check_queue",
+                "args": [],
+                "send_to": ("localhost", port),
+                "send_to_id": "",
+                "sent_from": "periodic_queue",
+                "delay": 0,
+                "disable_fault": True,
+            }
             data = pickle.dumps(data)
             client_socket.sendto(data, common.SYSTEM_ADDR)
 
 
-def periodic_report(client_sock, args=(1, 2,), report_delay=20):
+def periodic_report(
+    client_sock,
+    args=(
+        1,
+        2,
+    ),
+    report_delay=20,
+):
     while True:
         sleep(report_delay)
         d = 0
-        for port in range(common.SERVER_START_PORT, common.SERVER_START_PORT + common.MAX_NUM_SERVERS + 1):
-            data = {"func": "report",
-                    "args": (args,),
-                    "send_to": ('localhost', port), "send_to_id": "", "sent_from": "periodic_report",
-                    "delay": d, "disable_fault": True,
-                    }
+        for port in range(
+            common.SERVER_START_PORT,
+            common.SERVER_START_PORT + common.MAX_NUM_SERVERS + 1,
+        ):
+            data = {
+                "func": "report",
+                "args": (args,),
+                "send_to": ("localhost", port),
+                "send_to_id": "",
+                "sent_from": "periodic_report",
+                "delay": d,
+                "disable_fault": True,
+            }
             data = pickle.dumps(data)
             client_sock.sendto(data, common.SYSTEM_ADDR)
             d += 0.1
@@ -169,11 +193,11 @@ def periodic_report(client_sock, args=(1, 2,), report_delay=20):
 
 def start_new_server(server_instances):
     sid = "s0"
-    addr = ('localhost', 0)
+    addr = ("localhost", 0)
     for i in range(1, common.MAX_NUM_SERVERS + 1):
         sid = f"s{i}"
         if sid not in server_instances:
-            addr = ('localhost', common.SERVER_START_PORT + i - 1)
+            addr = ("localhost", common.SERVER_START_PORT + i - 1)
             break
 
     log.info(f"new server {sid} running on {addr}")
@@ -206,58 +230,77 @@ def test(client_instances: dict[str, Client], server_instances: dict[str, Server
 
 def test_1(client_instances):
     ## test 1: pay, get_tokens
-    client_instances['c1'].pay(1, 1, "c2")
+    client_instances["c1"].pay(1, 1, "c2")
     sleep(7)
-    client_instances['c1'].get_tokens(owner_id="c1")
+    client_instances["c1"].get_tokens(owner_id="c1")
     sleep(7)
-    client_instances['c2'].pay(14, 1, "c3")
+    client_instances["c2"].pay(14, 1, "c3")
 
 
 def test3(client_instances: dict[str, Client]):
     ## test 3: transform s1 to client + pay to new client + read
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    new_client = 'c7'
+    new_client = "c7"
     client_instances[new_client] = Client(new_client, [])
-    data = pickle.dumps({"func": "rm_server_and_add_client",
-                         "kwargs": {"server_to_rm": 's1', 'new_client': new_client},
-                         "send_to": common.SYSTEM_ADDR, "send_to_id": "", "sent_from": "test", })
+    data = pickle.dumps(
+        {
+            "func": "rm_server_and_add_client",
+            "kwargs": {"server_to_rm": "s1", "new_client": new_client},
+            "send_to": common.SYSTEM_ADDR,
+            "send_to_id": "",
+            "sent_from": "test",
+        }
+    )
     client_socket.sendto(data, common.SYSTEM_ADDR)
 
     sleep(4)
-    client_instances['c2'].pay(14, 1, "c7")
+    client_instances["c2"].pay(14, 1, "c7")
     sleep(4)
-    client_instances['c7'].get_tokens(owner_id="c7")
+    client_instances["c7"].get_tokens(owner_id="c7")
+
 
 def test2(client_instances: dict[str, Client], server_instances):
     # test 2: transform c6 to server + pay
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sid, addr = start_new_server(server_instances)
     log.info(f"new server {sid} addr {addr} started")
-    client_to_rm = 'c6'
+    client_to_rm = "c6"
     # client_instances['c6'].pop()
-    data = pickle.dumps({"func": "add_server_and_rm_client",
-                         "kwargs": {"client_to_rm": client_to_rm, 'new_server': {'sid': sid, 'addr': addr}},
-                         "send_to": common.SYSTEM_ADDR, "send_to_id": "", "sent_from": "test", })
+    data = pickle.dumps(
+        {
+            "func": "add_server_and_rm_client",
+            "kwargs": {
+                "client_to_rm": client_to_rm,
+                "new_server": {"sid": sid, "addr": addr},
+            },
+            "send_to": common.SYSTEM_ADDR,
+            "send_to_id": "",
+            "sent_from": "test",
+        }
+    )
     client_socket.sendto(data, common.SYSTEM_ADDR)
 
-    client_instances['c1'].pay(1, 1, "c2")
+    client_instances["c1"].pay(1, 1, "c2")
 
 
 # token_ids for periodic report in test run
 token_ids_for_test_run = [1, 14]
 
-if __name__ == '__main__':
-    server_instances = {f"s{i}": Server(id=f"s{i}", addr=('localhost', common.SERVER_START_PORT + i - 1)) for i in
-                        range(1, common.System.curr_num_servers + 1)}
+if __name__ == "__main__":
+    server_instances = {
+        f"s{i}": Server(id=f"s{i}", addr=("localhost", common.SERVER_START_PORT + i - 1))
+        for i in range(1, common.System.curr_num_servers + 1)
+    }
     client_instances = {f"c{i}": Client(id=f"c{i}") for i in range(1, common.System.curr_num_clients + 1)}
     main_events_log_filename = "main_events.log"
     # log.info(f"num cpu : {multiprocessing.cpu_count()}")
 
-    procs = [multiprocessing.Process(target=init_main_events_logger, args=(main_events_log_filename,)),
-             multiprocessing.Process(target=init_servers, args=(server_instances,)),
-             multiprocessing.Process(target=init_system, args=(server_instances,)),
-             multiprocessing.Process(target=init_clients, args=(client_instances, server_instances))
-             ]
+    procs = [
+        multiprocessing.Process(target=init_main_events_logger, args=(main_events_log_filename,)),
+        multiprocessing.Process(target=init_servers, args=(server_instances,)),
+        multiprocessing.Process(target=init_system, args=(server_instances,)),
+        multiprocessing.Process(target=init_clients, args=(client_instances, server_instances)),
+    ]
 
     for p in procs:
         p.start()

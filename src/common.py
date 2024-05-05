@@ -8,7 +8,8 @@ from dataclasses import dataclass
 
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)-8s - %(levelname)-5s - %(process)d (%(threadName)-9s) - %(message)s')
+    format="%(asctime)s - %(name)-8s - %(levelname)-5s - %(process)d (%(threadName)-9s) - %(message)s",
+)
 log = logging.getLogger(__name__)
 
 ####### conf #######
@@ -35,7 +36,8 @@ INIT_NUM_SERVERS = 5
 
 
 class System:
-    """ general configuration """
+    """general configuration"""
+
     curr_num_clients = 6  # changing this init value will require changing the tokens ownership struct in main.py
     curr_num_servers = INIT_NUM_SERVERS  # = n
     curr_f = (curr_num_servers - 1) // 2
@@ -56,14 +58,14 @@ class System:
             raw_data, addr = server_socket.recvfrom(1024 * 4)
             data = pickle.loads(raw_data)
 
-            send_to = data['send_to']
-            send_to_id = data['send_to_id']
-            sent_from = data.get('sent_from')
+            send_to = data["send_to"]
+            send_to_id = data["send_to_id"]
+            sent_from = data.get("sent_from")
 
             # message to self
             if send_to == SYSTEM_ADDR:
-                func = data.get('func')
-                kwargs = data.get('kwargs')
+                func = data.get("func")
+                kwargs = data.get("kwargs")
                 if func == "add_server_and_rm_client":
                     client = kwargs["client_to_rm"]
                     new_server = kwargs["new_server"]
@@ -81,7 +83,7 @@ class System:
                     from_server_status = System.servers_info.get(send_to_id)
                     to_server_status = System.servers_info.get(sent_from)
                     if System._should_drop_msg(from_server_status) or System._should_drop_msg(to_server_status):
-                        log.debug(f"System skipping message {sent_from} {send_to_id} (Fault)")
+                        log.debug(f"System skipping message {sent_from} to {send_to_id} (Fault)")
                         continue
 
                 # delay
@@ -112,37 +114,48 @@ class System:
                 return True
         return False
 
+    @staticmethod
     def rm_server_and_add_client(server_to_rm=None, new_client=None):
         """
         transform server to client
         """
         if System.curr_num_servers == MIN_NUM_SERVERS:
-            log.info(f"min servers reached")
+            log.info("min num servers reached")
             return System.curr_num_servers
 
         log.info(f"rm server, add client {new_client}")
 
         # notify servers
         for sid in System.servers_info.keys():
-            data = {"func": "removed_server_event",
-                    "args": (server_to_rm, new_client,),
-                    "send_to": System.servers_info[sid]["addr"],
-                    "send_to_id": sid,
-                    "sent_from": "System"
-                    }
+            data = {
+                "func": "removed_server_event",
+                "args": (
+                    server_to_rm,
+                    new_client,
+                ),
+                "send_to": System.servers_info[sid]["addr"],
+                "send_to_id": sid,
+                "sent_from": "System",
+            }
             data = pickle.dumps(data)
             log.debug(f"System notifying {sid} about rm server")
             System.pool.submit(System._submit_with_delay, data, System.servers_info[sid]["addr"], 0)
 
         # notify client_lib
-        data = pickle.dumps({"func": "removed_server_event",
-                             "args": (server_to_rm, new_client,),
-                             "send_to": ('localhost', CLIENT_START_PORT),
-                             "send_to_id": "client_lib",
-                             "sent_from": "System",
-                             "delay": 0
-                             })
-        System.pool.submit(System._submit_with_delay, data, ('localhost', CLIENT_START_PORT), 0)
+        data = pickle.dumps(
+            {
+                "func": "removed_server_event",
+                "args": (
+                    server_to_rm,
+                    new_client,
+                ),
+                "send_to": ("localhost", CLIENT_START_PORT),
+                "send_to_id": "client_lib",
+                "sent_from": "System",
+                "delay": 0,
+            }
+        )
+        System.pool.submit(System._submit_with_delay, data, ("localhost", CLIENT_START_PORT), 0)
 
         # rm
         del System.servers_info[server_to_rm]
@@ -161,33 +174,41 @@ class System:
         transform client to server
         """
         if System.curr_num_servers == MAX_NUM_SERVERS:
-            log.info(f"max servers reached")
+            log.info("max num servers reached")
             return System.curr_num_servers
 
         log.info(f"add server, rm client {client_to_rm}")
-        new_sid, new_addr = new_server['sid'], new_server['addr']
+        new_sid, new_addr = new_server["sid"], new_server["addr"]
 
         # notify servers
         for sid in System.servers_info.keys():
-            data = {"func": "added_server_event",
-                    "args": [new_sid, new_addr],
-                    "send_to": System.servers_info[sid]["addr"],
-                    "send_to_id": sid,
-                    "sent_from": "System"
-                    }
+            data = {
+                "func": "added_server_event",
+                "args": [new_sid, new_addr],
+                "send_to": System.servers_info[sid]["addr"],
+                "send_to_id": sid,
+                "sent_from": "System",
+            }
             data = pickle.dumps(data)
             log.debug(f"System notifying {sid} about new server {new_sid}")
             System.pool.submit(System._submit_with_delay, data, System.servers_info[sid]["addr"], 0)
 
         # notify client_lib
-        data = pickle.dumps({"func": "added_server_event",
-                             "args": (client_to_rm, new_sid, new_addr,),
-                             "send_to": ('localhost', CLIENT_START_PORT),
-                             "send_to_id": "client_lib",
-                             "sent_from": "System",
-                             "delay": 0
-                             })
-        System.pool.submit(System._submit_with_delay, data, ('localhost', CLIENT_START_PORT), 0)
+        data = pickle.dumps(
+            {
+                "func": "added_server_event",
+                "args": (
+                    client_to_rm,
+                    new_sid,
+                    new_addr,
+                ),
+                "send_to": ("localhost", CLIENT_START_PORT),
+                "send_to_id": "client_lib",
+                "sent_from": "System",
+                "delay": 0,
+            }
+        )
+        System.pool.submit(System._submit_with_delay, data, ("localhost", CLIENT_START_PORT), 0)
 
         # add
         System.servers_info[new_sid] = {"is_faulty": False, "addr": new_addr}
@@ -203,10 +224,7 @@ class System:
 
     @staticmethod
     def write_to_main_events_log(msg):
-        data = {"msg": msg,
-                "file": "common",
-                "sent_from": "System"
-                }
+        data = {"msg": msg, "file": "common", "sent_from": "System"}
         data = pickle.dumps(data)
         System.client_socket.sendto(data, MAIN_EVENTS_ADDR)
 
@@ -226,16 +244,17 @@ class System:
 
 ####### data classes #######
 
+
 class Token:
     def __init__(self, id, version=1, owner=None, locked=False):
-        self.id: int = id  # unique token identifier
-        self.version: int = version  # starts with 1 and increment
-        self.owner: str = owner  # current owner (1 to 100)
+        self.id: int = id
+        self.version: int = version
+        self.owner: str = owner
         self.locked: bool = locked
 
     def __str__(self):
-        locked_str = ', locked' if self.locked else ''
-        owner_str = f', owner {self.owner}' if self.owner else ''
+        locked_str = ", locked" if self.locked else ""
+        owner_str = f", owner {self.owner}" if self.owner else ""
         return f"[id {self.id}, v_{self.version}{owner_str}{locked_str}]"
 
     def __repr__(self):
