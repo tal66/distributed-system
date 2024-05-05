@@ -191,8 +191,8 @@ def start_new_server(server_instances):
 def test(client_instances: dict[str, Client], server_instances: dict[str, Server]):
     log.info("starting test")
 
-    # !! 1. set token_ids for periodic report BEFORE running test
-    #    2. RUN EACH TEST SEPARATELY (comment out other tests)
+    # !! set token_ids for periodic report BEFORE running test
+    #    run each scenario SEPARATELY (comment out other tests)
 
     ## test 1: pay + get_tokens
     test_1(client_instances)
