@@ -1,14 +1,14 @@
+import logging
 import multiprocessing
 import pickle
+import socket
 import threading
 from concurrent.futures import ThreadPoolExecutor
-import socket
-import logging
 from time import sleep, time
 
 import common
-from common import Token
 from clients import ClientLibrary, Client
+from common import Token
 from servers import Server
 
 log = logging.getLogger(__name__)
@@ -46,7 +46,9 @@ def init_servers(server_instances: dict):
     for sid in server_instances.keys():
         s: Server = server_instances[sid]
         s.tokenID_to_token = {i: Token(id=i, version=1, owner=f"c{((i - 1) // 10) + 1}") for i in range(1, 61)}
-        s.client_to_tokenID_history = {f"c{i}": [k for k in range((i - 1) * 10 + 1, 10 * i + 1)] for i in range(1, 7)}
+        s.client_to_tokenID_history = {
+            f"c{i}": [k for k in range((i - 1) * 10 + 1, 10 * i + 1)] for i in range(1, 7)
+        }
 
     pool.shutdown(wait=True)
 
@@ -55,10 +57,7 @@ def init_system(server_instances: dict):
     """start sys server"""
     for i, sid in enumerate(server_instances.keys()):
         common.System.servers_info[sid] = {}
-        common.System.servers_info[sid]["addr"] = (
-            "localhost",
-            common.SERVER_START_PORT + i,
-        )
+        common.System.servers_info[sid]["addr"] = ("localhost", common.SERVER_START_PORT + i)
         common.System.servers_info[sid]["is_faulty"] = False
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -145,10 +144,7 @@ def init_clients(client_instances: dict, server_instances: dict):
 def periodic_queue(client_socket: socket.socket, period_sec=5):
     while True:
         sleep(period_sec)
-        for port in range(
-            common.SERVER_START_PORT,
-            common.SERVER_START_PORT + common.MAX_NUM_SERVERS + 1,
-        ):
+        for port in range(common.SERVER_START_PORT, common.SERVER_START_PORT + common.MAX_NUM_SERVERS + 1):
             data = {
                 "func": "check_queue",
                 "args": [],
@@ -162,21 +158,11 @@ def periodic_queue(client_socket: socket.socket, period_sec=5):
             client_socket.sendto(data, common.SYSTEM_ADDR)
 
 
-def periodic_report(
-    client_sock,
-    args=(
-        1,
-        2,
-    ),
-    report_delay=20,
-):
+def periodic_report(client_sock, args=(1, 2), report_delay=20):
     while True:
         sleep(report_delay)
         d = 0
-        for port in range(
-            common.SERVER_START_PORT,
-            common.SERVER_START_PORT + common.MAX_NUM_SERVERS + 1,
-        ):
+        for port in range(common.SERVER_START_PORT, common.SERVER_START_PORT + common.MAX_NUM_SERVERS + 1):
             data = {
                 "func": "report",
                 "args": (args,),
@@ -269,10 +255,7 @@ def test2(client_instances: dict[str, Client], server_instances):
     data = pickle.dumps(
         {
             "func": "add_server_and_rm_client",
-            "kwargs": {
-                "client_to_rm": client_to_rm,
-                "new_server": {"sid": sid, "addr": addr},
-            },
+            "kwargs": {"client_to_rm": client_to_rm, "new_server": {"sid": sid, "addr": addr}},
             "send_to": common.SYSTEM_ADDR,
             "send_to_id": "",
             "sent_from": "test",

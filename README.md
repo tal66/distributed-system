@@ -16,4 +16,5 @@ quite a mess that works magnificently
 Simulated distributed network with multiple servers and clients, and omission failures (f<n/2).
 Servers sync state (with at least n-f, for safety) before replying to a client read/write request. \
 Clients can transfer tokens they own to other clients (using the API that talks to the servers),
-and can also query the servers for the current ownership state.
+and can also query the servers for the current ownership state. 
+Initial state: 60 tokens, owned by 6 clients (10 each).

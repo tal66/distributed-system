@@ -50,11 +50,7 @@ class Server:
             token.locked = True
 
         self.broadcast_echo(
-            ServerMessage(
-                self.id,
-                "pay",
-                ClientMessage(client_id, "pay", msg_id, token_id, version, new_owner_id),
-            )
+            ServerMessage(self.id, "pay", ClientMessage(client_id, "pay", msg_id, token_id, version, new_owner_id))
         )
 
     def get_tokens(self, msg_id, client_id, owner_id):
@@ -64,19 +60,11 @@ class Server:
             return
 
         # save / reset
-        self.msgs[msg_id] = {
-            "count": 0,
-            "done": False,
-            "tokens": {},
-            "num_servers": self.curr_num_servers,
-        }
+        self.msgs[msg_id] = {"count": 0, "done": False, "tokens": {}, "num_servers": self.curr_num_servers}
 
         # request client tokens from all servers
         client_msg = ClientMessage(
-            client_id=client_id,
-            client_msg_type="get_tokens",
-            msg_id=msg_id,
-            owner_id=owner_id,
+            client_id=client_id, client_msg_type="get_tokens", msg_id=msg_id, owner_id=owner_id
         )
         self.broadcast_read_tokens(
             ServerMessage(server_id=self.id, server_msg_type="get_tokens", client_msg=client_msg)
@@ -136,14 +124,11 @@ class Server:
                         continue
                     if token.locked:
                         self.queue_read.put(
-                            {
-                                "msg_id": msg_id,
-                                "client_id": msg.client_msg.client_id,
-                                "owner_id": owner_id,
-                            }
+                            {"msg_id": msg_id, "client_id": msg.client_msg.client_id, "owner_id": owner_id}
                         )
                         log.info(
-                            f"{self.id} postpone and reset get_tokens({owner_id}) (token {token} locked). queue size={self.queue_read.qsize()}"
+                            f"{self.id} postpone and reset get_tokens({owner_id}) (token {token} locked). "
+                            f"queue size={self.queue_read.qsize()}"
                         )
                         return  # postponed
                     tokens_answer.append(token)
@@ -153,12 +138,7 @@ class Server:
                     pickle.dumps(
                         {
                             "func": "receive_message",
-                            "args": ServerMessage(
-                                self.id,
-                                "get_tokens",
-                                msg.client_msg,
-                                tokens=tokens_answer,
-                            ),
+                            "args": ServerMessage(self.id, "get_tokens", msg.client_msg, tokens=tokens_answer),
                             "send_to": self.client_lib_addr,
                             "send_to_id": "client_lib",
                             "sent_from": self.id,
@@ -169,7 +149,9 @@ class Server:
 
                 self.mark_done(msg.client_msg)
                 log.info(f"{self.id} get_tokens({owner_id}) done: {[t.id for t in tokens_answer]}")
-                self.write_to_main_events_log(f"{self.id} get_tokens({owner_id}) done: {[t.id for t in tokens_answer]}")
+                self.write_to_main_events_log(
+                    f"{self.id} get_tokens({owner_id}) done: {[t.id for t in tokens_answer]}"
+                )
 
     def broadcast_read_tokens(self, server_msg: ServerMessage):
         """request tokens of owner"""
@@ -211,7 +193,9 @@ class Server:
         token = self.tokenID_to_token[msg.client_msg.token_id]
 
         # log
-        log.info(f"{self.id} executing PAY {msg.client_msg.client_id}({token.id}) -> {msg.client_msg.new_owner}: {msg}")
+        log.info(
+            f"{self.id} executing PAY {msg.client_msg.client_id}({token.id}) -> {msg.client_msg.new_owner}: {msg}"
+        )
         self.write_to_main_events_log(
             f"{self.id} executing PAY {msg.client_msg.client_id} -> {msg.client_msg.new_owner}: {msg}"
         )
@@ -327,13 +311,7 @@ class Server:
                 self.receive_echo(msg)
             else:
                 s = self.servers_addr[sid]
-                data = {
-                    "func": "receive_echo",
-                    "args": msg,
-                    "send_to": s,
-                    "send_to_id": sid,
-                    "sent_from": self.id,
-                }
+                data = {"func": "receive_echo", "args": msg, "send_to": s, "send_to_id": sid, "sent_from": self.id}
                 self.client_socket.sendto(pickle.dumps(data), self.system_addr)
 
     def is_client_msg_done(self, msg: str or ClientMessage):

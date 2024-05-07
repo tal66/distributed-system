@@ -36,7 +36,7 @@ INIT_NUM_SERVERS = 5
 
 
 class System:
-    """general configuration"""
+    """forwards messages to servers, adds delays and faults"""
 
     curr_num_clients = 6  # changing this init value will require changing the tokens ownership struct in main.py
     curr_num_servers = INIT_NUM_SERVERS  # = n
@@ -62,7 +62,7 @@ class System:
             send_to_id = data["send_to_id"]
             sent_from = data.get("sent_from")
 
-            # message to self
+            # msg to self
             if send_to == SYSTEM_ADDR:
                 func = data.get("func")
                 kwargs = data.get("kwargs")
@@ -129,10 +129,7 @@ class System:
         for sid in System.servers_info.keys():
             data = {
                 "func": "removed_server_event",
-                "args": (
-                    server_to_rm,
-                    new_client,
-                ),
+                "args": (server_to_rm, new_client),
                 "send_to": System.servers_info[sid]["addr"],
                 "send_to_id": sid,
                 "sent_from": "System",
@@ -145,10 +142,7 @@ class System:
         data = pickle.dumps(
             {
                 "func": "removed_server_event",
-                "args": (
-                    server_to_rm,
-                    new_client,
-                ),
+                "args": (server_to_rm, new_client),
                 "send_to": ("localhost", CLIENT_START_PORT),
                 "send_to_id": "client_lib",
                 "sent_from": "System",
@@ -197,11 +191,7 @@ class System:
         data = pickle.dumps(
             {
                 "func": "added_server_event",
-                "args": (
-                    client_to_rm,
-                    new_sid,
-                    new_addr,
-                ),
+                "args": (client_to_rm, new_sid, new_addr),
                 "send_to": ("localhost", CLIENT_START_PORT),
                 "send_to_id": "client_lib",
                 "sent_from": "System",
